@@ -1,5 +1,5 @@
 <template>
-    <lightning-card title="Salesforce DataLoader" icon-name="standard:multi_select_checkbox">
+    <lightning-card title="CSV Data Uploader" icon-name="standard:multi_select_checkbox">
         
         <div class="slds-p-horizontal_large slds-p-bottom_medium slds-border_bottom">
             <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
@@ -76,11 +76,11 @@
                                 name="operationDropdown" 
                                 label="Import Operation" 
                                 value={selectedOperation}
-                                placeholder="Insert, Update, or Upsert..." 
+                                placeholder="Insert, Update, Upsert, Delete, or Undelete..." 
                                 options={operationOptions} 
                                 onchange={handleOperationChange} 
                                 required
-                                help-text="Select INSERT for new records or UPDATE to modify existing ones">
+                                help-text="Insert for new records, Update to modify, Upsert to insert-or-update, Delete/Undelete require an Id column.">
                             </lightning-combobox>
                         </div>
                     </div>
@@ -227,13 +227,40 @@
                 <div class="progress-simple-container">
                     <div class="progress-simple-card">
                         <div class="progress-simple-header">
-                            <!-- <lightning-icon icon-name="standard:process" size="large" class="progress-icon"></lightning-icon> -->
                             <h2 class="progress-simple-title">Importing Your Data</h2>
                         </div>
-                       
+                    
                         <div class="progress-message-box">
                             <p class="progress-message-text">{message}</p>
                         </div>
+
+                        <!-- NEW: Delete/Undelete result summary -->
+                        <template if:true={isDeleteUndeleteOperation}>
+                            <div class="slds-box slds-m-top_medium">
+                                <template if:true={operationResult}>
+                                    <div class="slds-grid slds-wrap slds-gutters">
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <p class="slds-text-title">Total Records</p>
+                                            <p class="slds-text-heading_medium">
+                                                {operationResult.totalRecords}
+                                            </p>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <p class="slds-text-title">Successful</p>
+                                            <p class="slds-text-heading_medium">
+                                                {operationResult.successCount}
+                                            </p>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <p class="slds-text-title">Failed</p>
+                                            <p class="slds-text-heading_medium">
+                                                {operationResult.failureCount}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </template>

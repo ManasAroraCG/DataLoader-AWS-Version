@@ -155,8 +155,9 @@
     <externalSharingModel>Private</externalSharingModel>
     <label>Delete Undelete Record</label>
     <nameField>
-        <label>Delete Undelete Record Name</label>
-        <type>Text</type>
+        <displayFormat>DUR-{00000}</displayFormat>
+        <label>Delete Undelete Record Number</label>
+        <type>AutoNumber</type>
     </nameField>
     <pluralLabel>Delete Undelete Records</pluralLabel>
     <searchLayouts></searchLayouts>

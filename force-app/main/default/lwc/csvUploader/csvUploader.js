@@ -5,9 +5,11 @@ import createDataFeedJobTracker from '@salesforce/apex/CSVUploaderController.cre
 import getObjects from '@salesforce/apex/CSVDataController.getObjects';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getPresignedUrl from '@salesforce/apex/CSVUploaderController.getPresignedUrl';
-
 import getExistingMappings from '@salesforce/apex/CSVConfigurationMapping.getExistingMappings';
 import getMappingDetails from '@salesforce/apex/CSVConfigurationMapping.getMappingDetails';
+import deleteRecords from '@salesforce/apex/DeleteUndeleteController.deleteRecords';
+import undeleteRecords from '@salesforce/apex/DeleteUndeleteController.undeleteRecords';
+import LightningConfirm from 'lightning/confirm';
 
 export default class csvUploader extends LightningElement {
     chunkSize = 200; 
@@ -29,6 +31,9 @@ export default class csvUploader extends LightningElement {
     @track processedRecords = 0;
     @track message;
     @track showObjectRecommendations = false;
+    @track selectedIdColumn = 'Id';
+    @track operationResult = null;
+    @track operationResultMessages = [];
     
     // tan
     @track selectedUniqueKey = '';
@@ -57,6 +62,9 @@ export default class csvUploader extends LightningElement {
     get showUniqueKeyCombobox() {
         return this.selectedOperation === 'Update' && this.headersArray && this.headersArray.length > 0;
     }
+    get isDeleteUndeleteOperation() {
+        return ['Delete', 'Undelete'].includes(this.selectedOperation);
+    }
  
     get uniqueKeyColumnOptions() {
         return (this.headersArray || []).map(h => ({ label: h, value: h }));
@@ -82,7 +90,9 @@ export default class csvUploader extends LightningElement {
         this.operationOptions = [
             { label: 'Insert', value: 'Insert' },
             { label: 'Update', value: 'Update' },
-            { label: 'Upsert', value: 'Upsert' }
+            { label: 'Upsert', value: 'Upsert' },
+            { label: 'Delete', value: 'Delete' },
+            { label: 'Undelete', value: 'Undelete' }
         ];
         getObjects()
             .then(data => {
@@ -283,6 +293,22 @@ export default class csvUploader extends LightningElement {
                 this.headersArray = headers;
                 this.totalRecords = lines.length - 1; 
                 console.log('Parsed headers:', this.headersArray);
+
+                const idHeader = headers.find(
+                    h => h.toLowerCase() === 'id'
+                );
+                this.selectedIdColumn = idHeader || null;
+
+                if (
+                    ['Delete', 'Undelete'].includes(this.selectedOperation) &&
+                    !idHeader
+                ) {
+                    this.showToast(
+                        'Missing Id Column',
+                        'Your CSV must contain a column named Id.',
+                        'error'
+                    );
+                }
             };
             reader.readAsText(file);
         }
@@ -300,18 +326,22 @@ export default class csvUploader extends LightningElement {
     }
  
     handleOperationChange(event) {
-        this.OperationIsSelected=true;
-        this.selectedOperation = event.detail.value;
-        if(this.selectedOperation === 'Insert')
-            {
-                this.message='The CSV Data has been read successfully, you will receive an Email notification once the Data is inserted.';
-            }
-            else
-            {
-                this.message='The CSV Data has been read successfully, you will receive an Email notification once the Data is updated.';
- 
-            }
+    this.OperationIsSelected = true;
+    this.selectedOperation = event.detail.value;
+
+    this.operationResult = null;
+    this.operationResultMessages = [];
+
+    if (this.selectedOperation === 'Delete') {
+        this.message = 'The CSV has been read. Records matching the supplied Salesforce IDs will be deleted.';
+    } else if (this.selectedOperation === 'Undelete') {
+        this.message = 'The CSV has been read. Deleted records matching the supplied Salesforce IDs will be restored.';
+    } else if (this.selectedOperation === 'Insert') {
+        this.message = 'The CSV Data has been read successfully, you will receive an Email notification once the Data is inserted.';
+    } else {
+        this.message = 'The CSV Data has been read successfully, you will receive an Email notification once the Data is updated.';
     }
+}
  
     get showNextButton() {
         return (
@@ -321,11 +351,51 @@ export default class csvUploader extends LightningElement {
         );
     }
  
-    handleNextClick() {
+    async handleNextClick() {
+    this.showFileNameDropdown = false;
+    this.isMappingLoaded = false;
+    this.selectedExistingMapping = '';
+    this.existingMappingMode = false;
+    this.existingPreviewRows = [];
+    this.existingMappingDetails = [];
+
+    // NEW: Delete/Undelete branch — mapping modal skip
+    if (this.isDeleteUndeleteOperation) {
+        if (!this.csvFileContent) {
+            this.showToast('Error', 'Please upload a CSV file first.', 'error');
+            return;
+        }
+        if (!this.selectedObject) {
+            this.showToast('Error', 'Please select a Salesforce object.', 'error');
+            return;
+        }
+        const hasIdHeader = this.headersArray.some(
+            h => h.trim().toLowerCase() === 'id'
+        );
+        if (!hasIdHeader) {
+            this.showToast(
+                'Missing Id Column',
+                'Your CSV must contain a column named Id.',
+                'error'
+            );
+            return;
+        }
+
+        // Skip mapping screens, go straight to progress
         this.showImportCard = false;
         this.showHeaderBlocks = false;
-        this.showMappingChoiceModal = true;
+        this.showMappingChoiceModal = false;
+        this.showProgressBar = true;
+
+        await this.processDeleteUndelete();
+        return;
     }
+
+    // Existing flow for Insert/Update/Upsert
+    this.showImportCard = false;
+    this.showHeaderBlocks = false;
+    this.showMappingChoiceModal = true;
+}
  
     handleUniqueKeyTypeSelect(event) {
         this.uniqueKeyType = event.target.value;
@@ -496,12 +566,114 @@ export default class csvUploader extends LightningElement {
             await this.processCSV();
         }
     }
- 
+
+    
     previousPage() {
         this.showHeaderBlocks = false;
         this.showImportCard = true;
         this.showProgressBar = false;
     }
+
+    async processDeleteUndelete() {
+    this.operationResult = null;
+    this.operationResultMessages = [];
+    this.processedRecords = 0;
+    this.progressValue = 0;
+
+    try {
+        if (this.selectedOperation === 'Delete') {
+            const confirmed = await LightningConfirm.open({
+                label: 'Confirm Delete',
+                message: 'Are you sure you want to delete the records identified by this CSV? This action may be difficult to reverse.',
+                theme: 'warning'
+            });
+            if (!confirmed) {
+                this.showProgressBar = false;
+                this.showImportCard = true;
+                return;
+            }
+        }
+
+        const jsonData = this.parseCSV(this.csvFileContent);
+        if (!jsonData.length) {
+            throw new Error('No valid CSV data rows were found.');
+        }
+
+        // Find Id header (case-insensitive, strip BOM)
+        const idHeader = Object.keys(jsonData[0] || {}).find(
+            header => header
+                .replace(/^\uFEFF/, '')
+                .replace(/^"|"$/g, '')
+                .trim()
+                .toLowerCase() === 'id'
+        );
+        if (!idHeader) {
+            throw new Error('No Id column was found. Please verify the first row of your CSV.');
+        }
+
+        this.selectedIdColumn = idHeader;
+
+        const recordIds = jsonData
+            .map(row => String(row[idHeader] ?? '').trim())
+            .filter(id => id.length > 0);
+
+        if (!recordIds.length) {
+            throw new Error(`The "${idHeader}" column does not contain any record IDs.`);
+        }
+
+        this.totalRecords = recordIds.length;
+        this.message = `${this.selectedOperation} operation is in progress...`;
+
+        let result;
+        if (this.selectedOperation === 'Delete') {
+            result = await deleteRecords({
+                objectApiName: this.selectedObject,
+                recordIds: recordIds
+            });
+        } else {
+            result = await undeleteRecords({
+                objectApiName: this.selectedObject,
+                recordIds: recordIds
+            });
+        }
+
+        this.operationResult = result;
+        this.operationResultMessages = (result.messages || []).map(
+            (message, index) => ({ id: `result-${index}`, message })
+        );
+
+        this.processedRecords = result.totalRecords;
+        this.progressValue = 100;
+
+        this.message =
+            `${this.selectedOperation} finished. ` +
+            `Successful: ${result.successCount}, ` +
+            `Failed: ${result.failureCount}.`;
+
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: result.failureCount > 0
+                    ? 'Operation completed with errors'
+                    : 'Operation completed',
+                message: this.message,
+                variant: result.failureCount > 0 ? 'warning' : 'success'
+            })
+        );
+    } catch (error) {
+        this.message =
+            error?.body?.message ||
+            error?.message ||
+            'The operation failed.';
+
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: 'Operation failed',
+                message: this.message,
+                variant: 'error'
+            })
+        );
+    }
+}
 
     goToUploadPage() {
         this.jobTrackerId = null;
@@ -528,6 +700,9 @@ export default class csvUploader extends LightningElement {
         this.existingPreviewRows = [];
         this.existingMappingDetails = [];
         this.existingMappingMode = false;
+        this.selectedIdColumn = 'Id';
+        this.operationResult = null;
+        this.operationResultMessages = [];
     }
  
     async sendDataInChunks(jsonData, fileName) {

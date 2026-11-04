@@ -22,10 +22,5 @@
         <name>CustomObject</name>
     </types>
 
-    <types>
-        <members>*</members>
-        <name>Flow</name>
-    </types>
-
     <version>68.0</version>
 </Package>
