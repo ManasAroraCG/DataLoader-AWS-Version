@@ -1,0 +1,407 @@
+/* Container sizing to prevent layout jumping */
+.content-area {
+    min-height: 350px;
+}
+
+/* File Upload Dropzone Styling */
+.custom-file-container {
+    background-color: #f9fafb;
+    border: 2px dashed #c9c9c9;
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.custom-file-container:hover {
+    border-color: #0176d3;
+    background-color: #f0f8ff;
+}
+
+/* Styling the "Selected File" badge */
+.file-badge {
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* Grouping inputs into visual cards */
+.input-card {
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Progress bar thick and rounded */
+.slds-progress-bar {
+    height: 1.25rem;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+/* Progress card for Step 3 */
+.progress-info-card {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #fafaf9;
+    border-radius: 12px;
+    border: 1px solid #d8d8d8;
+}
+
+/* Transitions */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slds-fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Button hover enhancement */
+lightning-button:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s;
+}
+/* 1. Header & Typography Styling */
+.custom-header {
+    background-color: #f8fbff; /* Very light blue tint */
+    border-bottom: 2px solid #eef4ff;
+}
+
+.modal-title {
+    font-size: 1.5rem !important;
+    font-weight: 800 !important; /* Extra Bold */
+    color: #032d60; /* Dark Navy Blue */
+    letter-spacing: -0.5px;
+}
+
+.modal-subtitle {
+    color: #475569;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+/* 2. Content Background */
+.custom-content-bg {
+    background-color: #f1f5f9; /* Light grey-blue background to make cards pop */
+}
+
+/* 3. The Grid and Cards */
+.choice-grid {
+    display: flex;
+    gap: 2.5rem;
+}
+
+.visual-picker-container {
+    width: 280px;
+    cursor: pointer;
+}
+
+.custom-visual-picker {
+    background: #ffffff;
+    border: 2px solid transparent;
+    border-radius: 1.25rem; /* More rounded modern corners */
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+}
+
+/* 4. Icon "Blobs" (Colors) */
+.icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.bg-blue { background-color: #e0f2fe; }
+.bg-green { background-color: #dcfce7; }
+
+/* 5. Card Text Styling */
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.card-description {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.5;
+    font-weight: 400;
+}
+
+/* 6. Hover States (More Color!) */
+.visual-picker-container:hover .custom-visual-picker {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #0ea5e9; /* Light Blue Border on hover */
+}
+
+.visual-picker-container:hover .card-title {
+    color: #032d60;
+}
+
+/* 7. Footer */
+.custom-footer {
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+}
+
+.footer-note {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: #94a3b8;
+}
+
+/* ========== IMPROVED IMPORT PAGE STYLES ========== */
+
+.import-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 500px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #f3f4f6 100%);
+    padding: 3rem 1rem;
+}
+
+.import-progress-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    padding: 3rem;
+    max-width: 600px;
+    width: 100%;
+    animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header Section */
+.import-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.import-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #0070d2 0%, #0057b3 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 20px rgba(0, 112, 210, 0.2);
+}
+
+.import-icon-wrapper lightning-icon {
+    color: white;
+}
+
+.import-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.5px;
+}
+
+.import-subtitle {
+    font-size: 1rem;
+    color: #64748b;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Status Message Box */
+.status-message-box {
+    background: #f0f9ff;
+    border-left: 4px solid #0070d2;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.status-icon {
+    flex-shrink: 0;
+    color: #0070d2;
+    margin-top: 2px;
+}
+
+.status-text {
+    margin: 0;
+    color: #0c5cc5;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Progress Section */
+.progress-section {
+    margin-bottom: 2rem;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.progress-label {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.progress-percentage {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0070d2;
+}
+
+.main-progress-bar {
+    height: 12px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Records Counter */
+.records-counter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.counter-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.counter-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.counter-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0070d2;
+}
+
+.counter-divider {
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+/* Completion Message */
+.completion-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    background: #f0fdf4;
+    border: 2px solid #dcfce7;
+    border-radius: 12px;
+    text-align: center;
+    animation: slideUp 0.6s ease-out;
+}
+
+.completion-icon {
+    margin-bottom: 1rem;
+}
+
+.completion-text {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #047857;
+}
+
+/* Search option dropdown item hover effect */
+.search-option:hover {
+    background-color: #f8f9fa;
+}
+.progress-simple-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    padding: 2rem;
+}
+ 
+.progress-simple-card {
+    max-width: 600px;
+    width: 100%;
+    padding: 2rem;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+ 
+.progress-simple-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+ 
+.progress-icon {
+    color: #0070d2;
+    margin-bottom: 1rem;
+}
+ 
+.progress-simple-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333333;
+    margin: 0;
+}
+ 
+.progress-message-box {
+    background: #f5f5f5;
+    padding: 1rem;
+    border-left: 4px solid #0070d2;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+}
+ 
+.progress-message-text {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #555555;
+    line-height: 1.5;
+}

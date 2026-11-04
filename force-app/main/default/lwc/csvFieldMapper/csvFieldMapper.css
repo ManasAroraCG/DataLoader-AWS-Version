@@ -1,0 +1,364 @@
+.column-checkbox-card lightning-input .slds-form-element__label {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    width: 100%;
+    display: inline-block;
+}
+/* Custom badge for selected unique key columns */
+.custom-badge {
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 600;
+    background: linear-gradient(90deg, #b6f5d8 0%, #d0f5e8 100%);
+    color: #04844b;
+    display: inline-block;
+    box-shadow: 0 2px 8px 0 rgba(4,132,75,0.10);
+    border: 1.5px solid #7ed6a6;
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+}
+/* Hide the cross (remove) icon from all lightning pills in this component */
+.slds-pill__remove {
+    display: none !important;
+}
+:host {
+    --slds-c-card-color-background: #ffffff;
+}
+ 
+.custom-header {
+    border-bottom: 2px solid #0070d2;
+    background: #f8f9fb;
+}
+ 
+.table-header {
+    background-color: #f3f3f3;
+    border-bottom: 1px solid #dddbda;
+    color: #444;
+}
+ 
+.mapping-row {
+    border-bottom: 1px solid #f3f3f3;
+    transition: background 0.2s;
+}
+ 
+.mapping-row:hover {
+    background-color: #faffff;
+}
+ 
+.csv-label {
+    font-weight: 600;
+    color: #1b1b1b;
+}
+ 
+/* Composite Section Styles */
+.composite-box {
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+ 
+.columns-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    min-width: 700px;
+}
+ 
+.column-checkbox-card {
+    background: white;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 5px;
+    border: 1px solid #dddbda;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+ 
+.column-checkbox-card:hover {
+    background: #f0f0f0;
+    border-color: #0070d2;
+}
+ 
+.selection-cloud {
+    background: #eef4ff;
+    border-radius: 4px;
+    border-left: 3px solid #0070d2;
+}
+ 
+.composite-result-card {
+    border-left: 4px solid #04844b !important;
+    background: #fff;
+    transition: box-shadow 0.2s;
+}
+ 
+.composite-result-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+ 
+.sticky-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: white;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    padding: 1rem;
+    border-top: 1px solid #dddbda;
+}
+ 
+.additional-mappings {
+    background: #fafafa;
+    border-top: 1px solid #eee;
+}
+ 
+/* Mapping type example boxes (purple outline with title) */
+.mapping-type-examples {
+    margin-top: 1rem;
+}
+.mapping-type-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+.mapping-type-box {
+    flex: 1 1 48%;
+    border: 3px solid #B76CF0; /* purple border */
+    border-radius: 8px;
+    padding: 12px;
+    background: rgba(183,108,240,0.03);
+    position: relative;
+}
+.mapping-type-pill {
+    position: absolute;
+    top: -12px;
+    left: 12px;
+    background: #fff;
+    color: #7e00b9;
+    border: 2px solid #b76cf0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(183,108,240,0.12);
+}
+.mapping-type-inner {
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e6e6e6;
+    padding: 20px;
+    min-height: 120px;
+}
+.field-pill {
+    display: inline-block;
+    background: #ecfff7;
+    color: #04844b;
+    padding: 8px 12px;
+    border-radius: 18px;
+    border: 1px solid #bfead0;
+    font-weight: 600;
+}
+.target-placeholder {
+    display: inline-block;
+    margin-left: 16px;
+    padding: 10px 16px;
+    border: 1px solid #d6d6d6;
+    border-radius: 6px;
+    color: #555;
+    background: #fafafa;
+}
+.lookup-rows {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.lookup-row {
+    padding: 8px 10px;
+    border: 1px solid #e6e6e6;
+    border-radius: 6px;
+    background: #fff;
+    color: #333;
+}
+/* =========================================================
+   Salesforce Target Field Search
+   ========================================================= */
+
+.field-search-container {
+    position: relative;
+    width: 100%;
+    overflow: visible;
+}
+
+/* Search input */
+.field-search-container lightning-input {
+    display: block;
+    width: 100%;
+}
+
+/* =========================================================
+   Dropdown
+   ========================================================= */
+
+.field-recommendations {
+    position: absolute;
+    top: calc(100% - 1px);
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #d8dde6;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    z-index: 9999;
+    max-height: 220px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* =========================================================
+   Dropdown Option
+   ========================================================= */
+
+.search-option {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 14px;
+    min-height: 38px;
+    background: #ffffff;
+    border-bottom: 1px solid #eeeeee;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 20px;
+    color: #181818;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Hover */
+.search-option:hover {
+    background-color: #f3f6f9;
+}
+
+/* Last item */
+.search-option:last-child {
+    border-bottom: none;
+}
+
+/* =========================================================
+   No Results
+   ========================================================= */
+
+.no-results {
+    padding: 12px 14px;
+    text-align: center;
+    font-size: 13px;
+    line-height: 20px;
+    color: #706e6b;
+    background: #ffffff;
+}
+
+/* =========================================================
+   Scrollbar
+   ========================================================= */
+
+.field-recommendations::-webkit-scrollbar {
+    width: 7px;
+}
+
+.field-recommendations::-webkit-scrollbar-track {
+    background: #f3f3f3;
+}
+
+.field-recommendations::-webkit-scrollbar-thumb {
+    background: #a8a8a8;
+    border-radius: 4px;
+}
+
+.field-recommendations::-webkit-scrollbar-thumb:hover {
+    background: #888888;
+}
+
+/* =========================================================
+   Mapping Card
+   ========================================================= */
+
+.composite-box {
+    position: relative;
+    overflow: visible;
+}
+
+/* =========================================================
+   Target Field
+   ========================================================= */
+
+.consistent-field {
+    width: 100%;
+}
+
+/* =========================================================
+   FIXES FOR LOOKUP ALIGNMENT AND SPACING
+   ========================================================= */
+
+.custom-alignment-row {
+    align-items: start !important;
+}
+
+/* Ensure labels have proper spacing */
+.custom-label {
+    display: block !important;
+    margin-bottom: 2px !important;
+    padding-top: 4px;
+    padding-bottom: 2px;
+}
+
+/* Fake input box for read-only Lookup Object */
+.fake-input-box {
+    height: 32px !important;
+    padding: 0 12px !important;
+    border-radius: 4px !important;
+    background-color: #f3f3f3 !important;
+    border: 1px solid #dddbda !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    margin-top: 2px !important;
+}
+
+/* Hide default lightning-input blue border and clear icon for custom search */
+.custom-search-input {
+    --slds-c-input-color-border-focus: #dddbda;
+    --slds-c-input-shadow-focus: none;
+    --slds-c-input-color-border: #dddbda;
+}
+
+.custom-search-input lightning-input {
+    margin-top: 2px;
+}
+
+/* =========================================================
+   FIX FOR LOOKUP OBJECT GAP AND ALIGNMENT
+   ========================================================= */
+
+/* Force both columns to align at the top */
+.custom-alignment-row {
+    align-items: flex-start !important;
+}
+
+/* Remove any default top margin from the custom component to fix the gap */
+c-searchable-dropdown {
+    display: block;
+    margin-top: 2px;
+}
+
+/* Ensure the custom label has consistent spacing */
+.custom-label {
+    display: block !important;
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
+    padding-top: 0 !important;
+    line-height: 1.5;
+}
