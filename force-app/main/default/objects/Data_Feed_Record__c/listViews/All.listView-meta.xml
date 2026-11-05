@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All</fullName>
+    <columns>NAME</columns>
+    <columns>Data_Feed_Record_JSON__c</columns>
+    <columns>File_Name__c</columns>
+    <columns>Is_Failed__c</columns>
+    <columns>Is_Processed__c</columns>
+    <columns>OBJECT_ID</columns>
+    <columns>CREATED_DATE</columns>
+    <columns>LAST_UPDATE</columns>
+    <columns>Data_Feed_Job_Tracker__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>All</label>
+</ListView>

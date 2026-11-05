@@ -1,0 +1,487 @@
+<template>
+    <!-- Header Section -->
+    <div class="slds-page-header slds-page-header_record-home custom-header">
+        <div class="slds-page-header__row">
+            <div class="slds-page-header__col-title">
+                <div class="slds-media">
+                    <div class="slds-media__figure">
+                        <lightning-icon icon-name="standard:account" size="medium"></lightning-icon>
+                    </div>
+                    <div class="slds-media__body">
+                        <div class="slds-page-header__name">
+                            <div class="slds-page-header__name-title">
+                                <h1>
+                                    <span class="slds-page-header__title slds-truncate" title="Field Mapping">Field Mapping Configuration</span>
+                                    <span class="slds-text-body_small slds-text-color_weak">Selected Object: <strong>{selectedObject}</strong></span>
+                                </h1>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+ 
+      <!-- Unique Key Selection for Update (Checkbox UI) -->
+   <template if:true={showUniqueKeySection}>
+        <lightning-card title="Define Key for Upsert "  class="slds-m-top_medium">
+            <div class="slds-p-horizontal_medium">
+                <div class="slds-scoped-notification slds-media slds-media_center slds-theme_info slds-m-bottom_medium" role="status">
+                    <div class="slds-media__figure">
+                        <lightning-icon icon-name="utility:info" size="small" variant="inverse"></lightning-icon>
+                    </div>
+                    <div class="slds-media__body">
+                        <p>Select one or more columns to act as the unique identifier for this update.
+                           <strong> Note:</strong> You can only define one unique key (single or composite).</p>
+                    </div>
+                </div>
+ 
+                <!-- Selection State: Not Created Yet -->
+                <template if:false={uniqueKeyCreated}>
+                    <div class="columns-grid">
+                        <template for:each={uniqueKeyColumnsForCheckbox} for:item="option">
+                            <div key={option.value} class="column-checkbox-card">
+                                <lightning-input
+                                    type="checkbox"
+                                    label={option.label}
+                                    data-value={option.value}
+                                    checked={option.isSelected}
+                                    onchange={handleUniqueKeyCheckboxChange}
+                                ></lightning-input>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="slds-m-top_medium">
+                        <lightning-button
+                            variant="brand"
+                            label="Set as Unique Key"
+                            icon-name="utility:check"
+                            onclick={handleCreateUniqueKey}
+                            disabled={isCreateUniqueKeyDisabled}
+                            title="Set the selected columns as the unique identifier">
+                        </lightning-button>
+                    </div>
+                </template>
+ 
+                <!-- Display State: Key is Created -->
+                <template if:true={uniqueKeyCreated}>
+                    <div class="slds-box slds-theme_shade slds-theme_alert-texture">
+                        <div class="slds-grid slds-grid_vertical-align-center">
+                            <lightning-icon icon-name="utility:shield" size="small" class="slds-m-right_small" variant="success"></lightning-icon>
+                            <div class="slds-col">
+                                <span class="slds-text-title_caps" style="margin-left: 5px;">Active Unique Key:</span>
+                                <div class="slds-m-top_xx-small">
+                                    <template for:each={createdUniqueKeyColumns} for:item="col">
+                                        <span key={col} class="custom-badge slds-badge slds-theme_success slds-m-right_xx-small" >{col}</span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="slds-col_bump-left">
+                                <lightning-button label="Change Key" variant="neutral" onclick={handleRemoveUniqueKey}></lightning-button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </lightning-card>
+    </template>
+ 
+ 
+    <div style="border-bottom: 2px solid #d8dde6; margin: 24px 0 16px 0;"></div>
+   
+   
+    <div class="slds-m-around_medium">
+        <!-- CSV Mapping Section -->
+        <lightning-card title="Map CSV Headers to Salesforce Fields" icon-name="utility:replace">
+ 
+            <div class="slds-p-horizontal_medium slds-p-vertical_small" style="background-color: #F3F3F3; margin-bottom: 16px; border-radius: 4px;">
+                <p style="font-size: 13px; margin: 0;"><strong>What to do here:</strong> Match each column from your CSV file to the corresponding field in Salesforce. For lookup relationships, select the lookup object and the fields that will identify the related record.</p>
+            </div>
+           
+            <div class="slds-p-horizontal_medium">
+ 
+                <template for:each={allHeaderOptions} for:item="column">
+                        <div key={column.value} class="composite-box slds-m-bottom_large">
+ 
+                            <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                                 <h3 class="slds-text-title_caps">{column.label}</h3>
+                            
+                                   <lightning-button-icon
+                                    icon-name="utility:delete"
+                                    alternative-text="Delete Column Mapping"
+                                    title="Delete Column Mapping"
+                                    variant="bare"
+                                    size="large"
+                                    class="slds-m-left_x-small delete-btn-large"
+                                    onclick={handleDeleteColumnMapping}
+                                    data-columnvalue={column.value}>
+                                </lightning-button-icon>
+                            </div>
+                           
+                            <div>
+                                <c-searchable-dropdown
+                                    name={column.value}
+                                    label="Salesforce Target Field"
+                                    placeholder="Select a field"
+                                    class="consistent-field"
+                                    options={fieldOptions}
+                                    value={column.mappedField}
+                                    onchange={handleFieldChange}>
+                                </c-searchable-dropdown>
+                            </div>
+
+                            <!-- Use Lookup Checkbox -->
+                            <div class="slds-m-top_small">
+                                <lightning-input
+                                    type="checkbox"
+                                    label="Use Lookup"
+                                    checked={column.isLookupSelected}
+                                    data-keyfield={column.value}
+                                    onchange={handleLookupCheckboxChange}>
+                                </lightning-input>
+                            </div>
+
+                            <!-- OLD SEARCH DROPDOWN CODE (COMMENTED OUT) -->
+                            <!--
+                            <template if:false={column.isLookupSelected}>
+                                <template if:true={column.compositeDropdowns.length}>
+                                    <div class="slds-grid slds-wrap slds-gutters slds-m-bottom_small" style="align-items: end;">
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                            <c-searchable-dropdown
+                                                name="targetObject"
+                                                label="Lookup Object"
+                                                placeholder="Select a Salesforce object"
+                                                options={availableObjects}
+                                                value={column.targetObject}
+                                                data-keyfield={column.value}
+                                                onchange={handleCompositeTargetObjectChange}>
+                                            </c-searchable-dropdown>
+                                        </div>
+                                        <div class="slds-col slds-size_2-of-1 slds-medium-size_1-of-3 slds-p-right_small">
+                                            <template for:each={column.compositeDropdowns} for:item="dropdown">
+                                            <div key={dropdown.name} class="slds-m-bottom_small">
+                                                <c-searchable-dropdown
+                                                    name={dropdown.name}
+                                                    label={dropdown.compositeLabel}
+                                                    options={dropdown.options}
+                                                    value={dropdown.value}
+                                                    placeholder="Select a field"
+                                                    data-keyfield={column.value}
+                                                    onchange={handleLookupFieldSelection}>
+                                                </c-searchable-dropdown>
+                                            </div>
+                                        </template>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                            <c-searchable-dropdown
+                                                name="returnField"
+                                                label="Salesforce Field to Return"
+                                                placeholder="Select a field to return"
+                                                options={column.compositeTargetObjectFields}
+                                                value={column.returnField}
+                                                data-keyfield={column.value}
+                                                onchange={handleTargetObjectReturnFieldChange}>
+                                            </c-searchable-dropdown>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template if:false={column.compositeDropdowns.length}>
+                                <div class="slds-grid slds-wrap slds-gutters" style="align-items: end;">
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <c-searchable-dropdown
+                                            name="targetObject"
+                                            label="Lookup Object"
+                                            placeholder="Select a Salesforce object"
+                                            options={availableObjects}
+                                            value={column.targetObject}
+                                            data-keyfield={column.value}
+                                            onchange={handleTargetObjectChange}>
+                                        </c-searchable-dropdown>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <c-searchable-dropdown
+                                            name="matchField"
+                                            label="Salesforce Field to Match On"
+                                            placeholder="Select a field to match"
+                                            options={column.targetObjectFields}
+                                            value={column.matchField}
+                                            data-keyfield={column.value}
+                                            onchange={handleTargetObjectMatchFieldChange}>
+                                        </c-searchable-dropdown>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                        <c-searchable-dropdown
+                                            name="returnField"
+                                            label="Salesforce Field to Return"
+                                            placeholder="Select a field to return"
+                                            options={column.targetObjectFields}
+                                            value={column.returnField}
+                                            data-keyfield={column.value}
+                                            onchange={handleTargetObjectReturnFieldChange}>
+                                        </c-searchable-dropdown>
+                                    </div>
+                                </div>
+                            </template>
+                            </template>
+                            -->
+
+                            <!-- NEW LOOKUP DESIGN -->
+                            <template if:true={column.isLookupSelected}>
+                                   
+                                    <div class="slds-grid slds-wrap slds-p-top_small slds-m-bottom_small custom-alignment-row">
+                                        
+                                        <!-- Left Side: Lookup Object -->
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-p-right_small">
+                                            <div class="slds-form-element" style="margin-bottom: 0; margin-top:0">
+                                                <label class="slds-form-element__label custom-label" style="margin-bottom: 18px !important;">Lookup Object</label>
+                                                
+                                                <!-- For Composite Lookup (Searchable) -->
+                                                <template if:true={column.compositeDropdowns.length}>
+                                                    <c-searchable-dropdown
+                                                        name="targetObject"
+                                                        label=""
+                                                        placeholder="Select a Salesforce object"
+                                                        options={availableObjects}
+                                                        value={column.targetObject}
+                                                        data-keyfield={column.value}
+                                                        onchange={handleCompositeTargetObjectChange}>
+                                                    </c-searchable-dropdown>
+                                                </template>
+
+                                                <!-- For Normal Lookup (Read-Only) -->
+                                                <template if:false={column.compositeDropdowns.length}>
+                                                    <div class="slds-form-element__control fake-input-box">
+                                                        <span style="font-weight: 500; font-size: 14px; color: #080707;">{column.lookupObjectName}</span>
+                                                    </div>
+                                                </template>
+
+                                            </div>
+                                        </div>
+
+                                        <!-- Right Side: Corresponding Fields -->
+                                        <div class="slds-col slds-size_2-of-1 slds-medium-size_1-of-3 slds-p-right_small">
+                                            
+                                            <!-- For Composite mappings (Searchable Custom) -->
+                                            <template if:true={column.compositeDropdowns.length}>
+                                                <template for:each={column.compositeDropdowns} for:item="dropdown">
+                                                <div key={dropdown.name} class="slds-m-bottom_small">
+                                                    <div class="slds-form-element" style="margin-bottom: 0;">
+                                                        <!-- Searchable Label -->
+                                                        <label class="slds-form-element__label custom-label">{dropdown.compositeLabel}</label>
+                                                        
+                                                        <!-- Searchable Dropdown Area -->
+                                                        <div class="field-search-container">
+                                                            <c-searchable-dropdown
+                                                                name={dropdown.name}
+                                                                label=""
+                                                                options={dropdown.options}
+                                                                value={dropdown.value}
+                                                                placeholder="Select a field"
+                                                                data-keyfield={column.value}
+                                                                onchange={handleLookupFieldSelection}>
+                                                            </c-searchable-dropdown>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                </template>
+                                            </template>
+             
+                                            <!-- For non-composite lookups -->
+                                            <template if:false={column.compositeDropdowns.length}>
+                                                <div class="slds-form-element" style="margin-top: 0;">
+                                                    <label class="slds-form-element__label custom-label">Corresponding Salesforce Field</label>
+                                                    <c-searchable-dropdown
+                                                        name={column.value}
+                                                        label=""
+                                                        options={column.lookupObjectOptions}
+                                                        value={column.lookupField1}
+                                                        placeholder="Select a field"
+                                                        data-keyfield={column.value}
+                                                        onchange={handleLookupFieldSelection}>
+                                                    </c-searchable-dropdown>
+                                                </div>
+                                            </template>
+             
+                                        </div>
+                                        
+                                        <!-- Return Field (Only for Composite) -->
+                                        <template if:true={column.compositeDropdowns.length}>
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                            <div class="slds-form-element" style="margin-bottom: 0;">
+                                                <label class="slds-form-element__label custom-label">Salesforce Field to Return</label>
+                                                <c-searchable-dropdown
+                                                    name="returnField"
+                                                    label=""
+                                                    placeholder="Select a field to return"
+                                                    options={column.compositeTargetObjectFields}
+                                                    value={column.returnField}
+                                                    data-keyfield={column.value}
+                                                    onchange={handleTargetObjectReturnFieldChange}>
+                                                </c-searchable-dropdown>
+                                            </div>
+                                        </div>
+                                        </template>
+                                        
+                                    </div>
+ 
+                            </template>
+
+                        </div>
+ 
+                </template>
+            </div>
+ 
+        </lightning-card>
+ 
+        <!-- Composite Mapping Section (always shown) -->
+        <template if:true={showCompositeUniqueKeys}>
+            <lightning-card title="Composite Unique Keys" icon-name="utility:unlinked" class="slds-m-top_medium">
+                <div class="slds-p-horizontal_medium">
+                    <div class="slds-scoped-notification slds-media slds-media_center slds-theme_info slds-m-bottom_medium" role="status">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="utility:info" size="small" variant="inverse"></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                            <p>Select multiple columns (e.g., Name + Phone) to enforce uniqueness based on their combined values, ensuring each record is uniquely identified by that column combination.</p>
+                        </div>
+                    </div>
+                    <div class="slds-m-top_medium slds-m-bottom_medium">
+                        <lightning-button label="Add Composite Mapping" variant="brand" onclick={handleShowCompositeMappingUI}></lightning-button>
+                    </div>
+                        <template for:each={compositeSections} for:item="section">
+                <div key={section.id} class="composite-box slds-m-bottom_large">
+                    <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                        <h3 class="slds-text-title_caps">Available CSV Columns (Section {section.id})</h3>
+                        <lightning-button-icon
+                            icon-name="utility:delete"
+                            alternative-text="Delete Section"
+                            title="Delete Section"
+                            variant="bare"
+                            class="slds-m-left_x-small"
+                            onclick={handleDeleteCompositeSection}
+                            data-sectionid={section.id}>
+                        </lightning-button-icon>
+                    </div>
+                    <div class="columns-grid">
+                        <template for:each={compositeColumnsForCheckbox} for:item="column">
+                            <div key={column.value} class="column-checkbox-card">
+                                    <lightning-input
+                                        type="checkbox"
+                                        label={column.label}
+                                        data-column={column.value}
+                                        data-sectionid={section.id}
+                                        onchange={handleColumnCheckboxChange}
+                                        checked={column.isChecked}
+                                        disabled={section.isMapped}>
+                                    </lightning-input>
+                            </div>
+                </template>
+            </div>
+            <div class="slds-m-top_medium slds-border_top slds-p-top_medium">
+                <lightning-button
+                    variant="brand"
+                    label="Create Composite Mapping"
+                    icon-name="utility:add"
+                    onclick={handleCreateCompositeMapping}
+                    data-sectionid={section.id}
+                    disabled={section.isButtonDisabled}>
+                </lightning-button>
+            </div>
+            <!-- Chips Area -->
+            <template if:true={section.selectedColumns.length}>
+                <div class="slds-box slds-theme_alert-texture slds-m-top_small slds-p-around_small selection-cloud">
+                    <span class="slds-text-title_bold slds-m-right_small">Selected:</span>
+                    <template for:each={section.selectedColumns} for:item="column">
+                        <span key={column} class="custom-badge slds-m-right_xx-small" >{column}</span>
+                    </template>
+                </div>
+            </template>
+            <template if:true={section.isMapped}>
+                    <div class="slds-text-color_success slds-m-top_small">
+                        Mapping created for this section.
+                    </div>
+            </template>
+            </div>
+        </template>
+            
+                </div>
+            </lightning-card>
+        </template>
+ 
+        <div style="border-bottom: 2px solid #d8dde6; margin: 24px 0 16px 0;"></div>
+ 
+        <!-- Preview Table -->
+        <lightning-card title="Data Preview" icon-name="utility:table" class="slds-m-top_medium">
+            
+            <div>
+                <lightning-datatable
+                    key-field="id"
+                    data={tableData}
+                    columns={columns}
+                    hide-checkbox-column="true">
+                </lightning-datatable>
+            </div>
+        </lightning-card>
+    </div>
+ 
+    <!-- Actions Footer (tan)--> 
+    <footer class="slds-docked-form-footer sticky-footer">
+        <template if:true={showCreateMappingButton}>
+            <lightning-button label="Create Mapping" variant="brand" onclick={createMapping}></lightning-button>
+        </template>
+        
+        <template if:true={showModifyMappingButton}>
+            <lightning-button label="Modify Mapping (Add New Columns)" variant="brand" onclick={handleModifyMappingClick}></lightning-button>
+        </template>
+    </footer>
+
+
+    <!-- ===== MAPPING NAME POPUP ===== -->
+    <template if:true={showMappingPopup}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-text-heading_medium">Save Mapping Configuration</h2>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                        Give this mapping a unique name so you can reuse it later.
+                    </p>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input
+                        type="text"
+                        label="Mapping Name"
+                        placeholder="e.g. Account_Insert_Mapping_v1"
+                        value={mappingNameInput}
+                        onchange={handleMappingNameChange}
+                        required
+                        message-when-value-missing="Mapping name is required"
+                        variant="label-stacked"
+                        disabled={isSaving}>
+                    </lightning-input>
+                    <template if:true={mappingNameError}>
+                        <p class="slds-text-color_error slds-m-top_x-small">
+                            {mappingNameError}
+                        </p>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button
+                        label="Cancel"
+                        variant="neutral"
+                        onclick={closeMappingPopup}
+                        disabled={isSaving}>
+                    </lightning-button>
+                    <lightning-button
+                        label="Save Mapping"
+                        variant="brand"
+                        onclick={handleSaveMappingName}
+                        class="slds-m-left_x-small"
+                        disabled={isSaving}>
+                    </lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>
