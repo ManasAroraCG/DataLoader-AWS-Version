@@ -197,19 +197,39 @@
 
             <template if:true={showHeaderBlocks}>
                 <div class="mapping-container slds-fade-in">
-                    <c-csv-field-mapper
-                        csv-headers={headersArray}
-                        selected-object={selectedObject}
-                        selected-operation={selectedOperation}
-                        file-name={fileName}
-                        available-objects={objectOptions}
-                        onmappingcreated={handleMappingCreated}
+                    <template if:false={existingMappingMode}>
+                        <c-csv-field-mapper
+                            csv-headers={headersArray}
+                            selected-object={selectedObject}
+                            selected-operation={selectedOperation}
+                            file-name={fileName}
+                            available-objects={objectOptions}
+                            onmappingcreated={handleMappingCreated}
 
-                        existing-mapping-details={existingMappingDetails} 
-                        existing-mapping-mode={existingMappingMode}
-                        existing-mapping-display-name={selectedExistingMapping}
-                        >
-                    </c-csv-field-mapper>
+                            existing-mapping-details={existingMappingDetails} 
+                            existing-mapping-mode={existingMappingMode}
+                            existing-mapping-display-name={selectedExistingMapping}
+                            >
+                        </c-csv-field-mapper>
+                    </template>
+
+                    <template if:true={existingMappingMode}>
+                        <template if:true={existingMappingDetails}>
+                            <c-csv-field-mapper
+                                csv-headers={headersArray}
+                                selected-object={selectedObject}
+                                selected-operation={selectedOperation}
+                                file-name={fileName}
+                                available-objects={objectOptions}
+                                onmappingcreated={handleMappingCreated}
+
+                                existing-mapping-details={existingMappingDetails} 
+                                existing-mapping-mode={existingMappingMode}
+                                existing-mapping-display-name={selectedExistingMapping}
+                                >
+                            </c-csv-field-mapper>
+                        </template>
+                    </template>
                 </div>
                 <!-- tan -->
                 <template if:true={selectedMappingName}>

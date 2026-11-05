@@ -417,6 +417,12 @@ export default class csvUploader extends LightningElement {
         this.showMappingChoiceModal = false;
         this.showHeaderBlocks = true;
         this.showProgressBar = false;
+
+        // clean state for create mapping flow (if mode changes then we need to tell field mapper that mode changes)
+        this.existingMappingMode = false;
+        this.selectedExistingMapping = '';
+        this.existingMappingDetails = [];
+        this.selectedMappingName = '';
     }
  
     handleUseExistingMapping() {
@@ -431,6 +437,7 @@ export default class csvUploader extends LightningElement {
         this.existingPreviewRows = [];
         this.existingMappingDetails = [];
         this.existingMappingMode = false;
+        this.selectedMappingName = ''; // Clear this so Modify button workds correctly
 
         this.loadExistingMappings();
     }
