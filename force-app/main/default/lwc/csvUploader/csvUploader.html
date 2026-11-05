@@ -1,5 +1,14 @@
 <template>
     <lightning-card title="Salesforce Dataloader" icon-name="standard:multi_select_checkbox">
+        <div slot="actions" class="cg-header">
+            <img
+                src={CGInfinityLogo}
+                alt="CG Infinity"
+                class="cg-logo-header clickable-logo"
+                onclick={previousPage}
+                title="Back"
+            />
+        </div>
         
         <div class="slds-p-horizontal_large slds-p-bottom_medium slds-border_bottom">
             <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
@@ -266,20 +275,66 @@
             </template>
         </div>
 
-        <div slot="footer" class="slds-p-top_medium">
-            <template if:true={showImportCard}>
-                <template if:true={showNextButton}>
-                    <lightning-button label="Next" variant="brand" onclick={handleNextClick} icon-name="utility:forward" icon-position="right"></lightning-button>
+                <div slot="footer" class="dataloader-footer">
+
+            <!-- ACTION BUTTONS -->
+            <div class="footer-buttons">
+
+                <template if:true={showImportCard}>
+                    <template if:true={showNextButton}>
+                        <lightning-button
+                            label="Next"
+                            variant="brand"
+                            onclick={handleNextClick}
+                            icon-name="utility:forward"
+                            icon-position="right">
+                        </lightning-button>
+                    </template>
                 </template>
-            </template>
-            <template if:true={showHeaderBlocks}>
-                <lightning-button label="Reset All" onclick={handleResetAll} class="slds-m-right_small"></lightning-button>
-                <lightning-button label="Back" onclick={previousPage} class="slds-m-right_x-small" icon-name="utility:back"></lightning-button>
-                <lightning-button label="Next" variant="brand" onclick={handleProcessNext} icon-name="utility:forward" icon-position="right"></lightning-button>
-            </template>
-            <template if:true={showProgressBar}>
-                <lightning-button label="Go to Home Page" variant="brand" onclick={goToUploadPage}></lightning-button>
-            </template>
+
+                <template if:true={showHeaderBlocks}>
+                    <lightning-button
+                        label="Reset All"
+                        onclick={handleResetAll}
+                        class="slds-m-right_small">
+                    </lightning-button>
+
+                    <lightning-button
+                        label="Back"
+                        onclick={previousPage}
+                        class="slds-m-right_x-small"
+                        icon-name="utility:back">
+                    </lightning-button>
+
+                    <lightning-button
+                        label="Next"
+                        variant="brand"
+                        onclick={handleProcessNext}
+                        icon-name="utility:forward"
+                        icon-position="right">
+                    </lightning-button>
+                </template>
+
+                <template if:true={showProgressBar}>
+                    <lightning-button
+                        label="Go to Home Page"
+                        variant="brand"
+                        onclick={goToUploadPage}>
+                    </lightning-button>
+                </template>
+
+            </div>
+
+            <!-- CG INFINITY BRANDING -->
+            <div class="cg-footer-branding">
+                <span>Built by</span>
+                <img
+                    src={CGInfinityLogo}
+                    alt="CG Infinity"
+                    class="cg-logo-footer"
+                />
+            </div>
+
         </div>
-    </lightning-card>
+            </lightning-card>
 </template>
