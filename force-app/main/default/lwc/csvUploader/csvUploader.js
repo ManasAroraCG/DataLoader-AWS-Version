@@ -10,6 +10,7 @@ import getMappingDetails from '@salesforce/apex/CSVConfigurationMapping.getMappi
 import deleteRecords from '@salesforce/apex/DeleteUndeleteController.deleteRecords';
 import undeleteRecords from '@salesforce/apex/DeleteUndeleteController.undeleteRecords';
 import LightningConfirm from 'lightning/confirm';
+import CG_Infinity_Logo from '@salesforce/resourceUrl/CGInfinityLogo';
 
 export default class csvUploader extends LightningElement {
     chunkSize = 200; 
@@ -59,6 +60,7 @@ export default class csvUploader extends LightningElement {
     ObjectIsSelected=false;
     OperationIsSelected=false;
     jobTrackerId = null;
+    CGInfinityLogo = CG_Infinity_Logo;
     get showUniqueKeyCombobox() {
         return this.selectedOperation === 'Update' && this.headersArray && this.headersArray.length > 0;
     }
