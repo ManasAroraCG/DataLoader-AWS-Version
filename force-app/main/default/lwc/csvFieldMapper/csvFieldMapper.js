@@ -78,7 +78,7 @@ export default class CsvFieldMapper extends LightningElement {
         this.csvHeaders = headers;
         this.lookupFields = [];
         this.selectedFields = [];
-        this.selectedDropdownValues = [];
+        this.selectedDropdownValues = []; // clear old data
         this.uniqueIdentifierWhereClause = '';
         this.csvHeaderOptions = this.csvHeaders.map(item => ({
             label: item,
@@ -344,7 +344,13 @@ export default class CsvFieldMapper extends LightningElement {
  
     connectedCallback() {
         // Initialize any data or state here if needed
-        this.createInitialCsvMapping();  
+        // this.createInitialCsvMapping(); 
+        // fixing duplicates
+        this.selectedDropdownValues = []; 
+        this.compositeHeaderOptions = [];
+        this.compositeSections = [];
+        this.createdCompositeMappings = [];
+        this.compositeMappingIdCounter = 0;
 
         // Initialize composite mapping options from csvHeaders
         this.csvHeaderOptions = this.csvHeaders.map(item => ({
@@ -1127,6 +1133,11 @@ buildConfiguration(mappingName) {
     }
 
     get showModifyMappingButton() {
+        // if existing mode is not on then modify mapping button will not shown (tan)
+        if(!this.existingMappingMode) {
+            return false;
+        }
+
         const savedHeaders = new Set(this.getExistingMappedHeaders());
         const hasNewHeaders = (this.selectedDropdownValues || []).some(row => {
             const header = (row.csvFieldName || '').trim().toLowerCase();
@@ -1416,10 +1427,12 @@ buildConfiguration(mappingName) {
             this.showToast('Error', error?.body?.message || error?.message || 'Unable to append new columns.', 'error');
         }
     }
-    
+
    // till here auto populate and modify mapping button logic ends here (tan)
 
     createInitialCsvMapping() {
+        this.selectedDropdownValues = [];
+
         for (let i = 0; i < this.csvHeaders.length; i++) {
             this.selectedDropdownValues.push(
                 { csvFieldName: this.csvHeaders[i],
