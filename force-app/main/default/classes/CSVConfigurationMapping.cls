@@ -205,6 +205,85 @@ public without sharing class CSVConfigurationMapping {
         }
     }
 
+    // To add new columns in Existing mapping (tan)
+    @AuraEnabled
+    public static void appendNewMappingColumns(
+        String wrapperJson,
+        String configurationDisplayName
+    ) {
+        if (String.isBlank(wrapperJson)) {
+            throw new AuraHandledException('Missing parameter: wrapperJson.');
+        }
+
+        if (String.isBlank(configurationDisplayName)) {
+            throw new AuraHandledException('Missing parameter: configurationDisplayName.');
+        }
+
+        ConfigurationWrapper wrapper;
+        try {
+            wrapper = (ConfigurationWrapper) JSON.deserialize(wrapperJson, ConfigurationWrapper.class);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Deserialization error: ' + e.getMessage());
+            throw new AuraHandledException('Invalid mapping JSON: ' + e.getMessage());
+        }
+
+        if (wrapper == null || wrapper.mapping == null) {
+            throw new AuraHandledException('Mapping configuration or mapping rows are missing.');
+        }
+
+        List<CgInfinity__Data_Feed_Mapping__c> existingRecords = [
+            SELECT CgInfinity__File_Column_Name__c
+            FROM CgInfinity__Data_Feed_Mapping__c
+            WHERE CgInfinity__Configuration_Display_Name__c = :configurationDisplayName
+        ];
+
+        Set<String> existingHeaders = new Set<String>();
+        for (CgInfinity__Data_Feed_Mapping__c record : existingRecords) {
+            if (String.isNotBlank(record.CgInfinity__File_Column_Name__c)) {
+                existingHeaders.add(record.CgInfinity__File_Column_Name__c.trim().toLowerCase());
+            }
+        }
+
+        List<CgInfinity__Data_Feed_Mapping__c> recordsToInsert = new List<CgInfinity__Data_Feed_Mapping__c>();
+
+        for (ConfigurationMapping mapping : wrapper.mapping) {
+            if (String.isBlank(mapping.csvFieldName)) continue;
+
+            String headerKey = mapping.csvFieldName.trim().toLowerCase();
+
+            // Never insert a column that already exists.
+            if (existingHeaders.contains(headerKey)) continue;
+
+            if (String.isBlank(mapping.selectedField)) {
+                throw new AuraHandledException('Select a Salesforce field for column: ' + mapping.csvFieldName);
+            }
+
+            CgInfinity__Data_Feed_Mapping__c record = new CgInfinity__Data_Feed_Mapping__c();
+            record.CgInfinity__Mapping_Name__c = wrapper.mappingName;
+            record.CgInfinity__Operation__c = wrapper.operationType;
+            record.CgInfinity__File_Name__c = wrapper.fileName;
+            record.CgInfinity__SObject_API_Name__c = wrapper.objectName;
+            record.CgInfinity__File_Column_Name__c = mapping.csvFieldName;
+            record.CgInfinity__Field_to_update__c = mapping.selectedField;
+            record.CgInfinity__Is_Lookup__c = mapping.isLookup;
+            record.CgInfinity__Lookup_Filter_Criteria__c = mapping.whereClause;
+
+            if (mapping.isLookup) {
+                record.CgInfinity__Lookup_Object_Name__c = mapping.lookupObject;
+                record.CgInfinity__Lookup_Field__c = mapping.selectedLookupFields;
+                record.CgInfinity__Lookup_Return_Field__c = mapping.returnField;
+            }
+
+            record.CgInfinity__Is_Unique_Key__c = mapping.isUniqueKey;
+
+            recordsToInsert.add(record);
+            existingHeaders.add(headerKey);
+        }
+
+        if (!recordsToInsert.isEmpty()) {
+            insert recordsToInsert;
+        }
+    }
 
     public class ConfigurationWrapper{
         @AuraEnabled public String objectName {get; set;}

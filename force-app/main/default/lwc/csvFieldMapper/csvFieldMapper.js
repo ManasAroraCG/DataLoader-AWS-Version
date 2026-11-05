@@ -4,6 +4,8 @@ import getLookupFields from '@salesforce/apex/LookupUtility.getLookupFieldsWithO
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import createConfiguration from '@salesforce/apex/CSVConfigurationMapping.createConfiguration';
 import mappingNameExists from '@salesforce/apex/CSVConfigurationMapping.mappingNameExists';
+import appendNewMappingColumns from '@salesforce/apex/CSVConfigurationMapping.appendNewMappingColumns';
+
 export default class CsvFieldMapper extends LightningElement {
     // Unique Key Section State
     @track selectedUniqueKeyColumns = [];
@@ -45,6 +47,26 @@ export default class CsvFieldMapper extends LightningElement {
     @track mappingNameInput = '';
     @track mappingNameError = '';
     @track isSaving = false;
+
+        // EXISTING MAPPING STATE
+    @track isMappingModified = false;
+    @api existingMappingMode = false;
+    @api existingMappingDisplayName;
+    @track hasHeaderDifferences = false;
+    _existingMappingDetails = [];
+    _isInitialized = false;
+
+    @api
+    get existingMappingDetails() {
+        return this._existingMappingDetails;
+    }
+
+    set existingMappingDetails(value) {
+        this._existingMappingDetails = Array.isArray(value) ? value : [];
+        if (this._isInitialized && this._existingMappingDetails.length > 0) {
+            this.populateExistingMapping();
+        }
+    }
 
     @api uniqueKeyType = '';
     @api
@@ -323,6 +345,7 @@ export default class CsvFieldMapper extends LightningElement {
     connectedCallback() {
         // Initialize any data or state here if needed
         this.createInitialCsvMapping();  
+
         // Initialize composite mapping options from csvHeaders
         this.csvHeaderOptions = this.csvHeaders.map(item => ({
             label: item,
@@ -337,13 +360,28 @@ export default class CsvFieldMapper extends LightningElement {
         // Get lookup fields for the selected object
         getFields({ objectName: this.selectedObject }).then(data => {
             this.fieldsWithLookupList = data.filter(field => field.isLookup).map(field => ({ label: field.label, apiName: field.apiName, isLookup: field.isLookup }));
-            this.fieldOptions = data.map(field => ({ label: field.label, value: field.apiName }));    
+            this.fieldOptions = data.map(field => ({ label: field.label, value: field.apiName }));   
+
             // Update dropdowns for unique key section
             this.updateUniqueKeyDropdowns();
+
+            // Rebuild existing mappings now that salesforce fields are loaded.
+            if(this._existingMappingDetails?.length){
+                this.populateExistingMapping();
+            }
+
         }).catch(error => {
             console.error('Error loading fields for object:', this.selectedObject, error);
             this.showToast('Error', 'Failed to load fields for ' + this.selectedObject + '. ' + (error.body ? error.body.message : error.message || ''), 'error');
         });
+
+        this._isInitialized = true;
+        if(this._existingMappingDetails.length>0) {
+            this.populateExistingMapping();
+        } else {
+            this.createInitialCsvMapping();  // only create blank rows if NO existing mapping exists
+        }
+
         // Initial update for unique key section
         this.updateUniqueKeyDropdowns();
     }
@@ -973,93 +1011,414 @@ async handleSaveMappingName() {
 
 // ===== STEP 5: Configuration builder =====
 buildConfiguration(mappingName) {
-    const config = {
-        objectName: this.selectedObject,
-        operationType: this.selectedOperation,
-        fileName: this.fileName,
-        mappingName: mappingName,           // Popup se aaya naam
-        mapping: []
-    };
-
-    // Transform selectedDropdownValues
-    config.mapping = this.selectedDropdownValues.map(item => {
-        let selectedLookupFields = '';
-        let lookupObjectName = '';
-        let targetObject = '';
-        let matchField = '';
-        let returnField = '';
-
-        if (item.isComposite && item.value && item.value.includes(',')) {
-            const parts = item.value.split(',').map(s => s.trim());
-
-            const lookupValues = parts
-                .map(part => {
-                    const val = item['lookupField_' + part];
-                    return val ? String(val).toLowerCase() : null;
-                })
-                .filter(val => val !== null && val !== undefined && val.trim && val.trim() !== '');
-
-            if (lookupValues.length > 0) {
-                selectedLookupFields = lookupValues.join(',');
-            }
-
-            if (item.isLookup) {
-                lookupObjectName = item.lookupObjectApiName || '';
-            } else if (item.compositeTargetObject) {
-                lookupObjectName = item.compositeTargetObject;
-                targetObject = item.compositeTargetObject;
-                matchField = selectedLookupFields;
-                returnField = item.returnField || '';
-            }
-        } else if (item.isLookup && item.lookupField1) {
-            selectedLookupFields = String(item.lookupField1).toLowerCase();
-            lookupObjectName = item.lookupObjectApiName || '';
-        }
-
-        if (!item.isComposite && !item.isLookup && item.targetObject) {
-            targetObject = item.targetObject;
-            matchField = item.matchField;
-            returnField = item.returnField;
-            lookupObjectName = item.targetObject;
-        }
-
-        const isLookupFinal = item.isLookup || (!!item.targetObject);
-
-        return {
-            csvFieldName: item.csvFieldName,
-            selectedField: item.selectedField,
-            isLookup: isLookupFinal,
-            selectedLookupFields: selectedLookupFields,
-            lookupObject: lookupObjectName,
-            whereClause: item.whereClause || '',
-            isUniqueKey: item.isUniqueKey || false,
-            targetObject: targetObject,
-            matchField: matchField,
-            returnField: returnField
+        const config = {
+            objectName: this.selectedObject,
+            operationType: this.selectedOperation,
+            fileName: this.fileName,
+            mappingName: mappingName,           // Popup se aaya naam
+            mapping: []
         };
-    });
 
-    // Upsert ke liye unique key flag set karo
-    if (this.selectedOperation === 'Upsert') {
-        config.mapping = config.mapping.map(mapping => {
-            const orig = this.selectedDropdownValues.find(
-                m => m.csvFieldName === mapping.csvFieldName && m.selectedField === mapping.selectedField
-            );
-            const isUniqueKey = this.createdUniqueKeyColumns.includes(orig ? orig.keyField : mapping.csvFieldName);
-            return { ...mapping, isUniqueKey: isUniqueKey, lookupObject: mapping.lookupObject };
-        });
-    } else {
-        config.mapping = config.mapping.map(mapping => {
-            if (mapping.isLookup) {
-                return { ...mapping, lookupObject: mapping.lookupObject };
+        // Transform selectedDropdownValues
+        config.mapping = this.selectedDropdownValues.map(item => {
+            let selectedLookupFields = '';
+            let lookupObjectName = '';
+            let targetObject = '';
+            let matchField = '';
+            let returnField = '';
+
+            if (item.isComposite && item.value && item.value.includes(',')) {
+                const parts = item.value.split(',').map(s => s.trim());
+
+                const lookupValues = parts
+                    .map(part => {
+                        const val = item['lookupField_' + part];
+                        return val ? String(val).toLowerCase() : null;
+                    })
+                    .filter(val => val !== null && val !== undefined && val.trim && val.trim() !== '');
+
+                if (lookupValues.length > 0) {
+                    selectedLookupFields = lookupValues.join(',');
+                }
+
+                if (item.isLookup) {
+                    lookupObjectName = item.lookupObjectApiName || '';
+                } else if (item.compositeTargetObject) {
+                    lookupObjectName = item.compositeTargetObject;
+                    targetObject = item.compositeTargetObject;
+                    matchField = selectedLookupFields;
+                    returnField = item.returnField || '';
+                }
+            } else if (item.isLookup && item.lookupField1) {
+                selectedLookupFields = String(item.lookupField1).toLowerCase();
+                lookupObjectName = item.lookupObjectApiName || '';
             }
-            return mapping;
+
+            if (!item.isComposite && !item.isLookup && item.targetObject) {
+                targetObject = item.targetObject;
+                matchField = item.matchField;
+                returnField = item.returnField;
+                lookupObjectName = item.targetObject;
+            }
+
+            const isLookupFinal = item.isLookup || (!!item.targetObject);
+
+            return {
+                csvFieldName: item.csvFieldName,
+                selectedField: item.selectedField,
+                isLookup: isLookupFinal,
+                selectedLookupFields: selectedLookupFields,
+                lookupObject: lookupObjectName,
+                whereClause: item.whereClause || '',
+                isUniqueKey: item.isUniqueKey || false,
+                targetObject: targetObject,
+                matchField: matchField,
+                returnField: returnField
+            };
         });
+
+        // Upsert ke liye unique key flag set karo
+        if (this.selectedOperation === 'Upsert') {
+            config.mapping = config.mapping.map(mapping => {
+                const orig = this.selectedDropdownValues.find(
+                    m => m.csvFieldName === mapping.csvFieldName && m.selectedField === mapping.selectedField
+                );
+                const isUniqueKey = this.createdUniqueKeyColumns.includes(orig ? orig.keyField : mapping.csvFieldName);
+                return { ...mapping, isUniqueKey: isUniqueKey, lookupObject: mapping.lookupObject };
+            });
+        } else {
+            config.mapping = config.mapping.map(mapping => {
+                if (mapping.isLookup) {
+                    return { ...mapping, lookupObject: mapping.lookupObject };
+                }
+                return mapping;
+            });
+        }
+
+        return config;
+}
+
+    // ===== AUTO-POPULATE LOGIC (tan) =====
+    normalizeHeader(header) {
+        return (header || '').trim().toLowerCase();
     }
 
-    return config;
-}
-   
+    getExistingMappedHeaders() {
+        const records = this._existingMappingDetails || [];
+        return records.flatMap(record =>
+            (record.CgInfinity__File_Column_Name__c || '')
+                .split(',')
+                .map(header => this.normalizeHeader(header))
+                .filter(Boolean)
+        );
+    }
+
+    checkHeaderDifferences() {
+        const csvHeaders = [...new Set((this.csvHeaders || []).map(h => this.normalizeHeader(h)).filter(Boolean))];
+        const savedHeaders = [...new Set(this.getExistingMappedHeaders())];
+
+        this.hasHeaderDifferences =
+            csvHeaders.length !== savedHeaders.length ||
+            csvHeaders.some(header => !savedHeaders.includes(header));
+    }
+
+    get showCreateMappingButton() {
+        return !this.existingMappingMode;
+    }
+
+    get showModifyMappingButton() {
+        const savedHeaders = new Set(this.getExistingMappedHeaders());
+        const hasNewHeaders = (this.selectedDropdownValues || []).some(row => {
+            const header = (row.csvFieldName || '').trim().toLowerCase();
+            return header && !savedHeaders.has(header);
+        });
+        return !this.isMappingModified && hasNewHeaders;
+    }
+
+    get showCompositeUniqueKeys() {
+        return !this.existingMappingMode;
+    }
+
+    populateExistingMapping() {
+        const records = this._existingMappingDetails || [];
+        if (!records.length) return;
+
+        console.log('Populating existing mapping:', JSON.stringify(records));
+        this.mappingName = records[0].CgInfinity__Mapping_Name__c || '';
+
+        this.compositeHeaderOptions = [];
+        this.compositeSections = [];
+        this.createdCompositeMappings = [];
+        this.checkHeaderDifferences();
+        this.isMappingModified = false;
+        const newSelectedDropdownValues = [];
+
+        records.forEach((row) => {
+            const isComposite = (row.CgInfinity__File_Column_Name__c || '').includes(',');
+
+            if (isComposite) {
+                const mappingId = this.compositeMappingIdCounter++;
+                const compositeKey = row.CgInfinity__File_Column_Name__c;
+                const keyField = `${compositeKey}__COMPOSITE_${mappingId}`;
+
+                this.compositeHeaderOptions = [
+                    ...this.compositeHeaderOptions,
+                    { label: compositeKey, value: keyField, isSelected: false, isComposite: true }
+                ];
+
+                if (!this.csvHeaders.includes(compositeKey)) {
+                    this.csvHeaders = [...this.csvHeaders, compositeKey];
+                }
+
+                this.createdCompositeMappings = [
+                    ...this.createdCompositeMappings,
+                    { id: mappingId, compositeKey, occurrence: 1 }
+                ];
+                this.compositeSections = [
+                    ...this.compositeSections,
+                    {
+                        id: mappingId,
+                        selectedColumns: compositeKey.split(',').map(s => s.trim()),
+                        isMapped: true,
+                        isButtonDisabled: true,
+                        name1: 'composite1',
+                        name2: 'composite2',
+                        lookupField1: '',
+                        lookupField2: ''
+                    }
+                ];
+
+                const parts = compositeKey.split(',').map(s => s.trim());
+                const storedLookupParts = (row.CgInfinity__Lookup_Field__c || '').split(',').map(s => s.trim());
+
+                const compositeRow = {
+                    csvFieldName: compositeKey,
+                    selectedField: row.CgInfinity__Field_to_update__c || '',
+                    isLookup: !!row.CgInfinity__Is_LookUp__c,
+                    isCompositeLookup: !!row.CgInfinity__Is_LookUp__c,
+                    keyField,
+                    value: compositeKey,
+                    isComposite: true,
+                    lookupObjectName: '',
+                    lookupObjectApiName: '',
+                    lookupObjectOptions: [],
+                    lookupObjectFields: [],
+                    whereClause: row.CgInfinity__Lookup_Filter_Criteria__c || '',
+                    returnField: row.CgInfinity__Lookup_Return_Field__c || '',
+                    targetObject: '',
+                    compositeTargetObject: '',
+                    compositeTargetObjectFields: [],
+                    matchField: '',
+                    _rawLookupObjectName: row.CgInfinity__Lookup_Object_Name__c || ''
+                };
+
+                parts.forEach((part, i) => {
+                    compositeRow['lookupField_' + part] = storedLookupParts[i] || '';
+                });
+
+                newSelectedDropdownValues.push(compositeRow);
+
+            } else {
+                newSelectedDropdownValues.push({
+                    csvFieldName: row.CgInfinity__File_Column_Name__c || '',
+                    selectedField: row.CgInfinity__Field_to_update__c || '',
+                    isLookup: !!row.CgInfinity__Is_LookUp__c,
+                    keyField: row.CgInfinity__File_Column_Name__c || `existing-${newSelectedDropdownValues.length}`,
+                    value: undefined,
+                    isComposite: false,
+                    lookupObjectName: '',
+                    lookupObjectApiName: '',
+                    lookupObjectOptions: [],
+                    lookupField1: row.CgInfinity__Is_LookUp__c ? row.CgInfinity__Lookup_Field__c : '',
+                    whereClause: row.CgInfinity__Lookup_Filter_Criteria__c || '',
+                    returnField: row.CgInfinity__Lookup_Return_Field__c || '',
+                    _rawLookupField: row.CgInfinity__Lookup_Field__c || ''
+                });
+            }
+        });
+
+        // Merge missing CSV headers (New columns)
+        const existingHeaders = new Set(newSelectedDropdownValues.map(row => this.normalizeHeader(row.csvFieldName)));
+        
+        this.csvHeaderOptions.forEach(header => {
+            const normalizedHeader = this.normalizeHeader(header.value);
+            if (!normalizedHeader || existingHeaders.has(normalizedHeader)) return;
+
+            newSelectedDropdownValues.push({
+                csvFieldName: header.value,
+                selectedField: '',
+                isLookup: false,
+                isCompositeLookup: false,
+                keyField: header.value,
+                value: undefined,
+                isComposite: false,
+                lookupObjectName: '',
+                lookupObjectApiName: '',
+                lookupObjectOptions: [],
+                lookupObjectFields: [],
+                lookupField1: '',
+                selectedLookupFields: '',
+                whereClause: '',
+                targetObject: '',
+                targetObjectFields: [],
+                compositeTargetObjectFields: [],
+                matchField: '',
+                returnField: '',
+                isUniqueKey: false
+            });
+            existingHeaders.add(normalizedHeader);
+        });
+
+        this.selectedDropdownValues = [...newSelectedDropdownValues];
+
+        // Reconstruct Unique Keys
+        const operationFromRecord = records[0].CgInfinity__Operation__c || this.selectedOperation;
+        if (operationFromRecord === 'Upsert') {
+            this.createdUniqueKeyColumns = records.filter(r => r.CgInfinity__Is_Unique_Key__c).map(r => r.CgInfinity__File_Column_Name__c);
+            this._uniqueKeyCreated = this.createdUniqueKeyColumns.length > 0;
+            this.selectedUniqueKeyColumns = [...this.createdUniqueKeyColumns];
+            this.uniqueKeyHeaderOptions = this.uniqueKeyHeaderOptions.map(opt => ({
+                ...opt,
+                isSelected: this.createdUniqueKeyColumns.includes(opt.value)
+            }));
+        }
+
+        // Hydrate Lookups
+        this.selectedDropdownValues.filter(r => r.isLookup && !r.isComposite && r.selectedField).forEach(r => this.hydrateLookupRow(r));
+        this.selectedDropdownValues.filter(r => r.isComposite && r.isLookup && r._rawLookupObjectName).forEach(r => this.hydrateCompositeRow(r));
+    }
+
+    hydrateLookupRow(row) {
+        const expectedSelectedField = row.selectedField;
+        if (expectedSelectedField === 'Id') {
+            getFields({ objectName: this.selectedObject }).then(fields => {
+                const idx = this.selectedDropdownValues.findIndex(v => v.keyField === row.keyField);
+                if (idx === -1) return;
+                const current = this.selectedDropdownValues[idx];
+                if (!current.isLookup || current.selectedField !== expectedSelectedField) return;
+                
+                const fieldOptions = fields.map(f => ({ label: f.label, value: f.apiName }));
+                const match = fieldOptions.find(f => f.value.toLowerCase() === (row._rawLookupField || '').toLowerCase());
+                
+                this.selectedDropdownValues[idx] = {
+                    ...current, lookupObjectApiName: this.selectedObject, lookupObjectName: this.selectedObject,
+                    lookupObjectOptions: fieldOptions, lookupField1: match ? match.value : (row._rawLookupField || '')
+                };
+                this.selectedDropdownValues = [...this.selectedDropdownValues];
+            }).catch(e => console.error(e));
+            return;
+        }
+
+        getLookupFields({ parentObjectName: this.selectedObject, lookupFieldName: row.selectedField }).then(data => 
+            getFields({ objectName: data.lookUpObjectName }).then(fields => {
+                const idx = this.selectedDropdownValues.findIndex(v => v.keyField === row.keyField);
+                if (idx === -1) return;
+                const current = this.selectedDropdownValues[idx];
+                if (!current.isLookup || current.selectedField !== expectedSelectedField) return;
+
+                this.selectedDropdownValues[idx] = {
+                    ...current,
+                    lookupObjectApiName: data.lookUpObjectName,
+                    lookupObjectName: this.convertApiNameToDisplayName(data.lookUpObjectName),
+                    lookupObjectOptions: fields.map(f => ({ label: f.label, value: f.apiName })),
+                    lookupField1: (fields.find(f => f.apiName.toLowerCase() === row._rawLookupField.toLowerCase()) || {}).apiName || ''
+                };
+                this.selectedDropdownValues = [...this.selectedDropdownValues];
+            })
+        ).catch(e => console.error(e));
+    }
+
+    hydrateCompositeRow(row) {
+        const expectedValue = row.value;
+        getFields({ objectName: row._rawLookupObjectName }).then(fields => {
+            const idx = this.selectedDropdownValues.findIndex(v => v.keyField === row.keyField);
+            if (idx === -1) return;
+            const current = this.selectedDropdownValues[idx];
+            if (!current.isLookup || current.value !== expectedValue) return;
+
+            const fieldOptions = fields.map(f => ({ label: f.label, value: f.apiName }));
+            const updated = { ...current };
+            updated.lookupObjectApiName = row._rawLookupObjectName;
+            updated.lookupObjectName = this.convertApiNameToDisplayName(row._rawLookupObjectName);
+            updated.lookupObjectFields = fieldOptions;
+            updated.lookupObjectOptions = fieldOptions;
+
+            const parts = updated.value.split(',').map(s => s.trim());
+            parts.forEach(part => {
+                const propName = 'lookupField_' + part;
+                const rawVal = updated[propName];
+                if (rawVal) {
+                    const match = fieldOptions.find(f => f.value.toLowerCase() === rawVal.toLowerCase());
+                    updated[propName] = match ? match.value : rawVal;
+                }
+            });
+            this.selectedDropdownValues[idx] = updated;
+            this.selectedDropdownValues = [...this.selectedDropdownValues];
+        }).catch(e => console.error(e));
+    }
+
+    // ===== MODIFY MAPPING LOGIC (tan) =====
+    async handleModifyMappingClick() {
+        try {
+            const savedHeaders = new Set(this.getExistingMappedHeaders());
+            const newRows = (this.selectedDropdownValues || []).filter(row => {
+                const csvHeader = (row.csvFieldName || '').trim().toLowerCase();
+                return csvHeader && !savedHeaders.has(csvHeader);
+            });
+
+            if (!newRows.length) {
+                this.showToast('Information', 'There are no new columns to append.', 'info');
+                return;
+            }
+
+            const unmappedRow = newRows.find(row => !row.selectedField);
+            if (unmappedRow) {
+                this.showToast('Error', `Select a Salesforce field for "${unmappedRow.csvFieldName}".`, 'error');
+                return;
+            }
+
+            if (!this.existingMappingDisplayName) {
+                this.showToast('Error', 'Selected mapping display name is empty.', 'error');
+                return;
+            }
+
+            const configuration = {
+                objectName: this.selectedObject,
+                operationType: this.selectedOperation,
+                fileName: this.fileName,
+                mappingName: this.mappingName,
+                mapping: newRows.map(row => {
+                    const lookupFields = row.lookupField1 ?? row.selectedLookupFields ?? '';
+                    return {
+                        csvFieldName: String(row.csvFieldName || ''),
+                        selectedField: String(row.selectedField || ''),
+                        isLookup: row.isLookup === true,
+                        selectedLookupFields: Array.isArray(lookupFields) ? lookupFields.join(',') : String(lookupFields),
+                        lookupObject: String(row.lookupObjectApiName || row.lookupObjectName || ''),
+                        whereClause: String(row.whereClause || ''),
+                        isUniqueKey: row.isUniqueKey === true,
+                        targetObject: String(row.targetObject || ''),
+                        matchField: String(row.matchField || ''),
+                        returnField: String(row.returnField || '')
+                    };
+                })
+            };
+
+            await appendNewMappingColumns({
+                wrapperJson: JSON.stringify(configuration),
+                configurationDisplayName: this.existingMappingDisplayName
+            });
+
+            this.isMappingModified = true;
+            this.showToast('Success', 'New columns appended to the existing mapping.', 'success');
+        } catch (error) {
+            console.error('Append mapping error:', JSON.stringify(error));
+            this.showToast('Error', error?.body?.message || error?.message || 'Unable to append new columns.', 'error');
+        }
+    }
+    
+   // till here auto populate and modify mapping button logic ends here (tan)
+
     createInitialCsvMapping() {
         for (let i = 0; i < this.csvHeaders.length; i++) {
             this.selectedDropdownValues.push(

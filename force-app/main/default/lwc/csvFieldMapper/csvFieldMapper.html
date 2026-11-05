@@ -335,77 +335,79 @@
         </lightning-card>
  
         <!-- Composite Mapping Section (always shown) -->
-        <lightning-card title="Composite Unique Keys" icon-name="utility:unlinked" class="slds-m-top_medium">
-            <div class="slds-p-horizontal_medium">
-                <div class="slds-scoped-notification slds-media slds-media_center slds-theme_info slds-m-bottom_medium" role="status">
-                    <div class="slds-media__figure">
-                        <lightning-icon icon-name="utility:info" size="small" variant="inverse"></lightning-icon>
-                    </div>
-                    <div class="slds-media__body">
-                         <p>Select multiple columns (e.g., Name + Phone) to enforce uniqueness based on their combined values, ensuring each record is uniquely identified by that column combination.</p>
-                    </div>
-                </div>
-                <div class="slds-m-top_medium slds-m-bottom_medium">
-                    <lightning-button label="Add Composite Mapping" variant="brand" onclick={handleShowCompositeMappingUI}></lightning-button>
-                </div>
-                    <template for:each={compositeSections} for:item="section">
-            <div key={section.id} class="composite-box slds-m-bottom_large">
-                <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
-                    <h3 class="slds-text-title_caps">Available CSV Columns (Section {section.id})</h3>
-                    <lightning-button-icon
-                        icon-name="utility:delete"
-                        alternative-text="Delete Section"
-                        title="Delete Section"
-                        variant="bare"
-                        class="slds-m-left_x-small"
-                        onclick={handleDeleteCompositeSection}
-                        data-sectionid={section.id}>
-                    </lightning-button-icon>
-                </div>
-                <div class="columns-grid">
-                    <template for:each={compositeColumnsForCheckbox} for:item="column">
-                        <div key={column.value} class="column-checkbox-card">
-                                <lightning-input
-                                    type="checkbox"
-                                    label={column.label}
-                                    data-column={column.value}
-                                    data-sectionid={section.id}
-                                    onchange={handleColumnCheckboxChange}
-                                    checked={column.isChecked}
-                                    disabled={section.isMapped}>
-                                </lightning-input>
+        <template if:true={showCompositeUniqueKeys}>
+            <lightning-card title="Composite Unique Keys" icon-name="utility:unlinked" class="slds-m-top_medium">
+                <div class="slds-p-horizontal_medium">
+                    <div class="slds-scoped-notification slds-media slds-media_center slds-theme_info slds-m-bottom_medium" role="status">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="utility:info" size="small" variant="inverse"></lightning-icon>
                         </div>
-            </template>
-        </div>
-        <div class="slds-m-top_medium slds-border_top slds-p-top_medium">
-            <lightning-button
-                variant="brand"
-                label="Create Composite Mapping"
-                icon-name="utility:add"
-                onclick={handleCreateCompositeMapping}
-                data-sectionid={section.id}
-                disabled={section.isButtonDisabled}>
-            </lightning-button>
-        </div>
-        <!-- Chips Area -->
-        <template if:true={section.selectedColumns.length}>
-            <div class="slds-box slds-theme_alert-texture slds-m-top_small slds-p-around_small selection-cloud">
-                <span class="slds-text-title_bold slds-m-right_small">Selected:</span>
-                <template for:each={section.selectedColumns} for:item="column">
-                    <span key={column} class="custom-badge slds-m-right_xx-small" >{column}</span>
+                        <div class="slds-media__body">
+                            <p>Select multiple columns (e.g., Name + Phone) to enforce uniqueness based on their combined values, ensuring each record is uniquely identified by that column combination.</p>
+                        </div>
+                    </div>
+                    <div class="slds-m-top_medium slds-m-bottom_medium">
+                        <lightning-button label="Add Composite Mapping" variant="brand" onclick={handleShowCompositeMappingUI}></lightning-button>
+                    </div>
+                        <template for:each={compositeSections} for:item="section">
+                <div key={section.id} class="composite-box slds-m-bottom_large">
+                    <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                        <h3 class="slds-text-title_caps">Available CSV Columns (Section {section.id})</h3>
+                        <lightning-button-icon
+                            icon-name="utility:delete"
+                            alternative-text="Delete Section"
+                            title="Delete Section"
+                            variant="bare"
+                            class="slds-m-left_x-small"
+                            onclick={handleDeleteCompositeSection}
+                            data-sectionid={section.id}>
+                        </lightning-button-icon>
+                    </div>
+                    <div class="columns-grid">
+                        <template for:each={compositeColumnsForCheckbox} for:item="column">
+                            <div key={column.value} class="column-checkbox-card">
+                                    <lightning-input
+                                        type="checkbox"
+                                        label={column.label}
+                                        data-column={column.value}
+                                        data-sectionid={section.id}
+                                        onchange={handleColumnCheckboxChange}
+                                        checked={column.isChecked}
+                                        disabled={section.isMapped}>
+                                    </lightning-input>
+                            </div>
                 </template>
             </div>
-        </template>
-        <template if:true={section.isMapped}>
-                <div class="slds-text-color_success slds-m-top_small">
-                    Mapping created for this section.
-                </div>
-        </template>
-        </div>
-    </template>
-           
+            <div class="slds-m-top_medium slds-border_top slds-p-top_medium">
+                <lightning-button
+                    variant="brand"
+                    label="Create Composite Mapping"
+                    icon-name="utility:add"
+                    onclick={handleCreateCompositeMapping}
+                    data-sectionid={section.id}
+                    disabled={section.isButtonDisabled}>
+                </lightning-button>
             </div>
-        </lightning-card>
+            <!-- Chips Area -->
+            <template if:true={section.selectedColumns.length}>
+                <div class="slds-box slds-theme_alert-texture slds-m-top_small slds-p-around_small selection-cloud">
+                    <span class="slds-text-title_bold slds-m-right_small">Selected:</span>
+                    <template for:each={section.selectedColumns} for:item="column">
+                        <span key={column} class="custom-badge slds-m-right_xx-small" >{column}</span>
+                    </template>
+                </div>
+            </template>
+            <template if:true={section.isMapped}>
+                    <div class="slds-text-color_success slds-m-top_small">
+                        Mapping created for this section.
+                    </div>
+            </template>
+            </div>
+        </template>
+            
+                </div>
+            </lightning-card>
+        </template>
  
         <div style="border-bottom: 2px solid #d8dde6; margin: 24px 0 16px 0;"></div>
  
@@ -423,10 +425,17 @@
         </lightning-card>
     </div>
  
-    <!-- Actions Footer -->
+    <!-- Actions Footer (tan)--> 
     <footer class="slds-docked-form-footer sticky-footer">
-        <lightning-button label="Create Mapping" variant="brand" onclick={createMapping}></lightning-button>
+        <template if:true={showCreateMappingButton}>
+            <lightning-button label="Create Mapping" variant="brand" onclick={createMapping}></lightning-button>
+        </template>
+        
+        <template if:true={showModifyMappingButton}>
+            <lightning-button label="Modify Mapping (Add New Columns)" variant="brand" onclick={handleModifyMappingClick}></lightning-button>
+        </template>
     </footer>
+
 
     <!-- ===== MAPPING NAME POPUP ===== -->
     <template if:true={showMappingPopup}>
